@@ -1585,7 +1585,7 @@ export default function PreviewPage() {
       const res = await fetch("/api/generate-free", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ matricule: fullData.property.matricule }),
+        body: JSON.stringify({ matricule: fullData.property.matricule, force: true }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Erreur lors de la génération");

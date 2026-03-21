@@ -23,7 +23,7 @@ const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { matricule } = body;
+    const { matricule, force } = body as { matricule?: string; force?: boolean };
 
     // ====================================================================
     // VALIDATION
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .single();
 
-    if (existingToken && new Date(existingToken.expires_at) > new Date()) {
+    if (!force && existingToken && new Date(existingToken.expires_at) > new Date()) {
       // Token encore valide — retourner directement
       return NextResponse.json(
         { token: existingToken.token, matricule },
