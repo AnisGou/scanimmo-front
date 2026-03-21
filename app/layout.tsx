@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Mono, DM_Serif_Display, IBM_Plex_Sans } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { getPublicBaseUrl } from "@/lib/app-url";
 
@@ -58,6 +59,18 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className={`${fontDisplay.variable} ${fontMono.variable} ${fontSans.variable}`}>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-S1K300MKB0"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-S1K300MKB0');
+          `}
+        </Script>
         {children}
       </body>
     </html>
