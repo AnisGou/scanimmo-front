@@ -3,19 +3,42 @@
  * @description Utilise Puppeteer pour generer un PDF depuis HTML
  */
 
+const CHROMIUM_RELEASE = "v143.0.0";
+let cachedExecutablePath: string | null = null;
+
 function isVercelRuntime(): boolean {
   return process.env.VERCEL === "1" || process.env.VERCEL === "true";
+}
+
+function getChromiumPackUrl(): string {
+  if (process.env.CHROMIUM_PACK_URL) {
+    return process.env.CHROMIUM_PACK_URL;
+  }
+
+  const arch = process.arch === "arm64" ? "arm64" : "x64";
+  return `https://github.com/Sparticuz/chromium/releases/download/${CHROMIUM_RELEASE}/chromium-v143.0.0-pack.${arch}.tar`;
+}
+
+async function getVercelExecutablePath(
+  chromium: { executablePath: (location?: string) => Promise<string> },
+): Promise<string> {
+  if (cachedExecutablePath) {
+    return cachedExecutablePath;
+  }
+
+  cachedExecutablePath = await chromium.executablePath(getChromiumPackUrl());
+  return cachedExecutablePath;
 }
 
 async function launchBrowser() {
   if (isVercelRuntime()) {
     const [{ default: chromium }, puppeteerModule] = await Promise.all([
-      import("@sparticuz/chromium"),
+      import("@sparticuz/chromium-min"),
       import("puppeteer-core"),
     ]);
 
     const puppeteer = puppeteerModule.default;
-    const executablePath = await chromium.executablePath();
+    const executablePath = await getVercelExecutablePath(chromium);
 
     return puppeteer.launch({
       args: puppeteer.defaultArgs({
