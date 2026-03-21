@@ -31,6 +31,10 @@ function logStep(step: string, details?: Record<string, unknown>) {
   console.log(`[generate-free] ${step}`);
 }
 
+function sanitizeHeaderValue(value: string): string {
+  return value.replace(/[^a-zA-Z0-9:_-]/g, "_").slice(0, 120);
+}
+
 export async function POST(request: NextRequest) {
   let stage = "request_parse";
 
@@ -248,6 +252,9 @@ export async function POST(request: NextRequest) {
         headers: {
           ...JSON_HEADERS,
           "X-Scanimmo-Failure-Stage": stage,
+          "X-Scanimmo-Failure-Reason": sanitizeHeaderValue(
+            error instanceof Error ? error.message : "unknown",
+          ),
         },
       },
     );

@@ -50,22 +50,27 @@ async function waitForFonts(page: { evaluate: (fn: () => Promise<void>) => Promi
 
 export async function convertHtmlToPdf(html: string): Promise<Buffer> {
   let browser;
+  let stage = "launch_browser";
 
   try {
     browser = await launchBrowser();
 
+    stage = "new_page";
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 1810 });
 
     // Charger le HTML sans attendre un idle reseau strict, puis laisser
     // les polices terminer si elles sont disponibles.
+    stage = "set_content";
     await page.setContent(html, {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
     });
+    stage = "wait_for_fonts";
     await waitForFonts(page);
 
     // Generer le PDF - marges gerees par le HTML.
+    stage = "page_pdf";
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
@@ -75,8 +80,8 @@ export async function convertHtmlToPdf(html: string): Promise<Buffer> {
 
     return Buffer.from(pdfBuffer);
   } catch (error) {
-    console.error("[pdf] Erreur conversion HTML -> PDF:", error);
-    throw new Error("Erreur generation PDF");
+    console.error("[pdf] Erreur conversion HTML -> PDF:", { stage, error });
+    throw new Error(`pdf_render:${stage}`);
   } finally {
     if (browser) {
       await browser.close();
