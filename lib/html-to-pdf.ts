@@ -3,17 +3,33 @@
  * @description Utilise Puppeteer pour générer un PDF depuis HTML
  */
 
-import puppeteer from "puppeteer-core";
+async function launchBrowser() {
+  if (process.env.VERCEL) {
+    const [{ default: chromium }, puppeteer] = await Promise.all([
+      import("@sparticuz/chromium"),
+      import("puppeteer-core"),
+    ]);
+
+    return puppeteer.default.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      headless: true,
+    });
+  }
+
+  const puppeteer = await import("puppeteer");
+
+  return puppeteer.default.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+}
 
 export async function convertHtmlToPdf(html: string): Promise<Buffer> {
   let browser;
 
   try {
-    // Lancer le navigateur
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    browser = await launchBrowser();
 
     const page = await browser.newPage();
 
