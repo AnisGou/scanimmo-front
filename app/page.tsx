@@ -582,7 +582,7 @@ function CGUModal({ open, onClose }: { open: boolean; onClose: () => void }) {
           fontFamily: T.mono, fontSize: 11, color: T.muted,
         }}>
           Version 2.0.0 {"\u00b7"} En vigueur depuis le 6 mars 2026 {"\u00b7"} Innovations Scanimmo Inc.<br/>
-          Si\u00e8ge social : Qu\u00e9bec (Qu\u00e9bec) Canada {"\u00b7"} contact@scanimmo.ca
+          Si\u00e8ge social : Qu\u00e9bec (Qu\u00e9bec) Canada {"\u00b7"} gouesmi.anis@gmail.com
         </div>
       </div>
     </Modal>
@@ -641,7 +641,7 @@ function AvertissementModal({ open, onClose }: { open: boolean; onClose: () => v
           fontFamily: T.mono, fontSize: 11, color: T.muted,
         }}>
           Version 1.0.0 {"\u00b7"} En vigueur depuis le 6 mars 2026 {"\u00b7"} Innovations Scanimmo Inc.<br/>
-          Si\u00e8ge social : Qu\u00e9bec (Qu\u00e9bec) Canada {"\u00b7"} contact@scanimmo.ca
+          Si\u00e8ge social : Qu\u00e9bec (Qu\u00e9bec) Canada {"\u00b7"} gouesmi.anis@gmail.com
         </div>
       </div>
     </Modal>
@@ -653,11 +653,27 @@ function ContactModal({ open, onClose }: { open: boolean; onClose: () => void })
   const [form, setForm] = useState({ nom: "", courriel: "", organisation: "", message: "", objet: "" });
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const contactEmail = "gouesmi.anis@gmail.com";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
-    setTimeout(() => { setSending(false); setSent(true); }, 1200);
+    const objetLabel = OBJETS.find((item) => item.v === form.objet)?.l ?? form.objet;
+    const subject = `[Scanimmo] ${objetLabel || "Nouveau message"}`;
+    const body = [
+      `Nom: ${form.nom}`,
+      `Courriel: ${form.courriel}`,
+      `Organisation: ${form.organisation || "Non fournie"}`,
+      "",
+      "Message:",
+      form.message,
+    ].join("\n");
+
+    window.location.href =
+      `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    setSending(false);
+    setSent(true);
   };
 
   const OBJETS = [
@@ -677,9 +693,9 @@ function ContactModal({ open, onClose }: { open: boolean; onClose: () => void })
               fontFamily: T.display, fontSize: 22, color: T.navy, marginBottom: 12,
             }}>Message envoyé</div>
             <div style={{ fontFamily: T.sans, fontSize: 14, color: T.muted, lineHeight: 1.7 }}>
-              Notre équipe vous répondra dans les 24 heures ouvrables.<br/>
-              Pour les demandes urgentes : <a href="mailto:contact@scanimmo.ca"
-                style={{ color: T.gold }}>contact@scanimmo.ca</a>
+              Nous vous remercions de votre message et vous répondrons dès que possible !<br/>
+              <a href={`mailto:${contactEmail}`}
+                style={{ color: T.gold }}>{contactEmail}</a>
             </div>
             <button onClick={() => { setSent(false); setForm({ nom:"",courriel:"",organisation:"",message:"",objet:"" }); onClose(); }}
               style={{
