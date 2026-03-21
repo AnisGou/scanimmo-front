@@ -32,6 +32,8 @@ function logStep(step: string, details?: Record<string, unknown>) {
 }
 
 export async function POST(request: NextRequest) {
+  let stage = "request_parse";
+
   try {
     const body = await request.json();
     const { matricule, force } = body as { matricule?: string; force?: boolean };
@@ -51,6 +53,7 @@ export async function POST(request: NextRequest) {
     // ====================================================================
     // VERIFIER QUE LA PROPRIETE EXISTE
     // ====================================================================
+    stage = "property_fetch";
     logStep("property_fetch:start", { matricule });
     const { data: property, error: propError } = await supabaseAdmin
       .from("properties")
@@ -73,6 +76,7 @@ export async function POST(request: NextRequest) {
     // ====================================================================
     // IDEMPOTENCE : verifier si un rapport gratuit existe deja
     // ====================================================================
+    stage = "token_lookup";
     logStep("token_lookup:start", { matricule });
     const { data: existingToken, error: existingTokenError } = await supabaseAdmin
       .from("report_tokens")
@@ -99,6 +103,7 @@ export async function POST(request: NextRequest) {
     // GENERER LE PDF
     // ====================================================================
     const municipalite = extractMunicipality(property.adresse);
+    stage = "pdf_render";
     logStep("pdf_render:start", { matricule, municipalite });
     const pdfBuffer = await generatePlaceholderPDF({
       matricule,
@@ -114,6 +119,7 @@ export async function POST(request: NextRequest) {
     // ====================================================================
     // UPLOAD PDF DANS SUPABASE STORAGE
     // ====================================================================
+    stage = "storage_upload";
     logStep("storage_upload:start", { matricule, storagePath });
     const { error: uploadError } = await supabaseAdmin.storage
       .from("reports")
@@ -141,6 +147,7 @@ export async function POST(request: NextRequest) {
     // so we use synthetic values for free reports.
     // ====================================================================
     const freeSessionId = `free_${matricule}_${Date.now()}`;
+    stage = "report_insert";
     logStep("report_insert:start", { matricule, storagePath });
     const { data: report, error: reportError } = await supabaseAdmin
       .from("reports")
@@ -177,6 +184,7 @@ export async function POST(request: NextRequest) {
     // ====================================================================
     // CREER TOKEN DE TELECHARGEMENT (30 jours)
     // ====================================================================
+    stage = "secure_token";
     logStep("secure_token:start", { matricule, reportId: report.id });
     const { data: tokenRecord, error: secureTokenError } = await supabaseAdmin.rpc("generate_secure_token");
     logStep("secure_token:done", {
@@ -196,6 +204,7 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
 
+    stage = "token_insert";
     logStep("token_insert:start", { matricule, reportId: report.id });
     const { error: tokenError } = await supabaseAdmin
       .from("report_tokens")
@@ -224,16 +233,23 @@ export async function POST(request: NextRequest) {
     }
 
     logStep("success", { matricule, filename });
+    stage = "done";
 
     return NextResponse.json(
       { token: tokenRecord, matricule },
       { headers: JSON_HEADERS },
     );
   } catch (error: unknown) {
-    console.error("[generate-free] unhandled:error", error);
+    console.error("[generate-free] unhandled:error", { stage, error });
     return NextResponse.json(
       { error: "Une erreur interne est survenue." },
-      { status: 500, headers: JSON_HEADERS },
+      {
+        status: 500,
+        headers: {
+          ...JSON_HEADERS,
+          "X-Scanimmo-Failure-Stage": stage,
+        },
+      },
     );
   }
 }
