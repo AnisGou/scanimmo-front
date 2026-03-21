@@ -8,8 +8,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { calculateScore } from "@/lib/calculate-score";
-import { scoreToPresentation } from "@/lib/score-presentation";
+import { resolveScore } from "@/lib/resolve-score";
 import { formatNumber, formatCurrency } from "@/lib/utils";
 import type { PropertyPreview, ScoreResult } from "@/lib/types";
 import {
@@ -1569,27 +1568,12 @@ export default function PreviewPage() {
     };
   }, [fullData]);
 
-  // Score unique : score_scanimmo DB (scoring v2 backend)
-  // calculateScore() reste pour les facteurs indicatifs uniquement
+  // Score unique : score_scanimmo DB quand disponible.
+  // Fallback frontend uniquement si la base n'a pas encore de score materialise.
   const score = useMemo<ScoreResult | null>(() => {
     if (!fullData || !preview) return null;
 
-    const dbScore = fullData.property.score_scanimmo;
-    const frontCalc = calculateScore(preview);  // facteurs indicatifs
-
-    if (dbScore != null) {
-      const pres = scoreToPresentation(dbScore);
-      return {
-        score: Math.round(dbScore * 10) / 10,
-        factors: frontCalc.factors,
-        color: pres.color,
-        emoji: pres.emoji,
-        label: pres.label,
-      };
-    }
-
-    // Pas de score backend — afficher null (pas de fallback frontend)
-    return null;
+    return resolveScore(preview, fullData.property.score_scanimmo);
   }, [fullData, preview]);
 
   /* ── Generate PDF ──────────────────────────────────────────────── */

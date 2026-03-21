@@ -5,11 +5,11 @@
 
 import type { Tier } from "./types";
 import { supabaseAdmin } from "./supabase-admin";
-import { calculateScore } from "./calculate-score";
 import { generateReportHTML } from "./generate-pdf-v2";
 import type { ReportData } from "./generate-pdf-v2";
 import { convertHtmlToPdf } from "./html-to-pdf";
 import { PDF_PROPERTY_FIELDS } from "./pdf-fields";
+import { resolveScore } from "./resolve-score";
 
 interface GenerateInput {
   matricule: string;
@@ -76,7 +76,7 @@ export async function generatePlaceholderPDF(data: GenerateInput): Promise<Buffe
       zonage_dominante: property.qc_dominante ?? null,
     };
 
-    const score = calculateScore(scoreData);
+    const score = resolveScore(scoreData, property.score_scanimmo);
 
     // ETAPE 2B: RECUPERER LES DONNEES DE PROXIMITE
     let proximity: ProximityData = {

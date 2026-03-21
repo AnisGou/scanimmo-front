@@ -12,8 +12,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { calculateScore } from "@/lib/calculate-score";
 import { getAvailableModules, countAvailableAnalyses } from "@/lib/modules";
+import { resolveScore } from "@/lib/resolve-score";
 import type { PropertyPreview, LidarMethod } from "@/lib/types";
 import { extractMunicipality } from "@/lib/utils";
 
@@ -53,7 +53,8 @@ export async function GET(request: NextRequest) {
   zone_inondable_0_20,
   hauteur_max_etages,
   cos_max,
-  qc_dominante
+  qc_dominante,
+  score_scanimmo
       `)
       .eq("id", id)
       .single();
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
     // ========================================================================
     // CALCULER LE SCORE
     // ========================================================================
-    const score = calculateScore(property);
+    const score = resolveScore(property, data.score_scanimmo);
 
     // ========================================================================
     // DÉTERMINER LES MODULES DISPONIBLES
