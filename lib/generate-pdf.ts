@@ -10,6 +10,7 @@ import type { ReportData } from "./generate-pdf-v2";
 import { convertHtmlToPdf } from "./html-to-pdf";
 import { PDF_PROPERTY_FIELDS } from "./pdf-fields";
 import { resolveScore } from "./resolve-score";
+import { generateFallbackPdf } from "./generate-fallback-pdf";
 
 interface GenerateInput {
   matricule: string;
@@ -194,7 +195,14 @@ export async function generatePlaceholderPDF(data: GenerateInput): Promise<Buffe
 
     // ETAPE 5: CONVERTIR HTML -> PDF
     console.log("[pdf] Conversion HTML -> PDF...");
-    const pdfBuffer = await convertHtmlToPdf(html);
+    let pdfBuffer: Buffer;
+    try {
+      pdfBuffer = await convertHtmlToPdf(html);
+    } catch (conversionError) {
+      console.warn("[pdf] Conversion HTML -> PDF indisponible, fallback PDF simple active");
+      console.warn(conversionError);
+      pdfBuffer = await generateFallbackPdf(reportData);
+    }
 
     console.log(`[pdf] PDF genere avec succes (${pdfBuffer.length} bytes)`);
     return pdfBuffer;
