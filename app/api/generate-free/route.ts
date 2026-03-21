@@ -1,13 +1,13 @@
 /**
  * API POST /api/generate-free
- * @description Génère un rapport PDF gratuit (tier essentiel) pour un matricule.
+ * @description Genere un rapport PDF gratuit (tier essentiel) pour un matricule.
  *
  * Flow:
  * 1. Valider matricule
- * 2. Vérifier que la propriété existe
- * 3. Générer le PDF via Puppeteer
+ * 2. Verifier que la propriete existe
+ * 3. Generer le PDF via Puppeteer
  * 4. Upload dans Supabase Storage
- * 5. Créer un report + token de téléchargement (30 jours)
+ * 5. Creer un report + token de telechargement (30 jours)
  * 6. Retourner {token, matricule}
  */
 
@@ -19,6 +19,17 @@ import { extractMunicipality } from "@/lib/utils";
 
 const FREE_TIER: Tier = "essentiel";
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+function logStep(step: string, details?: Record<string, unknown>) {
+  if (details) {
+    console.log(`[generate-free] ${step}`, details);
+    return;
+  }
+  console.log(`[generate-free] ${step}`);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,26 +46,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    logStep("start", { matricule, force: Boolean(force) });
+
     // ====================================================================
-    // VÉRIFIER QUE LA PROPRIÉTÉ EXISTE
+    // VERIFIER QUE LA PROPRIETE EXISTE
     // ====================================================================
+    logStep("property_fetch:start", { matricule });
     const { data: property, error: propError } = await supabaseAdmin
       .from("properties")
       .select("id, matricule, adresse, code_municipalite")
       .eq("matricule", matricule)
       .single();
+    logStep("property_fetch:done", {
+      matricule,
+      found: Boolean(property),
+      error: propError?.message ?? null,
+    });
 
     if (propError || !property) {
       return NextResponse.json(
-        { error: "Propriété introuvable" },
+        { error: "Propriete introuvable" },
         { status: 404, headers: JSON_HEADERS },
       );
     }
 
     // ====================================================================
-    // IDEMPOTENCE : vérifier si un rapport gratuit existe déjà
+    // IDEMPOTENCE : verifier si un rapport gratuit existe deja
     // ====================================================================
-    const { data: existingToken } = await supabaseAdmin
+    logStep("token_lookup:start", { matricule });
+    const { data: existingToken, error: existingTokenError } = await supabaseAdmin
       .from("report_tokens")
       .select("token, expires_at")
       .eq("matricule", matricule)
@@ -62,9 +82,13 @@ export async function POST(request: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(1)
       .single();
+    logStep("token_lookup:done", {
+      matricule,
+      found: Boolean(existingToken),
+      error: existingTokenError?.message ?? null,
+    });
 
     if (!force && existingToken && new Date(existingToken.expires_at) > new Date()) {
-      // Token encore valide — retourner directement
       return NextResponse.json(
         { token: existingToken.token, matricule },
         { headers: JSON_HEADERS },
@@ -72,16 +96,17 @@ export async function POST(request: NextRequest) {
     }
 
     // ====================================================================
-    // GÉNÉRER LE PDF
+    // GENERER LE PDF
     // ====================================================================
-    console.log(`📄 [generate-free] Génération PDF gratuit pour ${matricule}`);
-
+    const municipalite = extractMunicipality(property.adresse);
+    logStep("pdf_render:start", { matricule, municipalite });
     const pdfBuffer = await generatePlaceholderPDF({
       matricule,
       tier: FREE_TIER,
       adresse: property.adresse ?? undefined,
-      municipalite: extractMunicipality(property.adresse),
+      municipalite,
     });
+    logStep("pdf_render:done", { matricule, bytes: pdfBuffer.length });
 
     const filename = generatePDFFilename(matricule, FREE_TIER);
     const storagePath = `reports/${filename}`;
@@ -89,15 +114,21 @@ export async function POST(request: NextRequest) {
     // ====================================================================
     // UPLOAD PDF DANS SUPABASE STORAGE
     // ====================================================================
+    logStep("storage_upload:start", { matricule, storagePath });
     const { error: uploadError } = await supabaseAdmin.storage
       .from("reports")
       .upload(storagePath, pdfBuffer, {
         contentType: "application/pdf",
         upsert: true,
       });
+    logStep("storage_upload:done", {
+      matricule,
+      storagePath,
+      error: uploadError?.message ?? null,
+    });
 
     if (uploadError) {
-      console.error("❌ [generate-free] Erreur upload PDF:", uploadError);
+      console.error("[generate-free] storage_upload:error", uploadError);
       return NextResponse.json(
         { error: "Erreur lors de la sauvegarde du PDF" },
         { status: 500, headers: JSON_HEADERS },
@@ -105,11 +136,12 @@ export async function POST(request: NextRequest) {
     }
 
     // ====================================================================
-    // CRÉER REPORT (status: ready, gratuit)
+    // CREER REPORT (status: ready, gratuit)
     // stripe_session_id + customer_email are NOT NULL in schema,
     // so we use synthetic values for free reports.
     // ====================================================================
     const freeSessionId = `free_${matricule}_${Date.now()}`;
+    logStep("report_insert:start", { matricule, storagePath });
     const { data: report, error: reportError } = await supabaseAdmin
       .from("reports")
       .insert({
@@ -128,28 +160,47 @@ export async function POST(request: NextRequest) {
       })
       .select()
       .single();
+    logStep("report_insert:done", {
+      matricule,
+      reportId: report?.id ?? null,
+      error: reportError?.message ?? null,
+    });
 
     if (reportError || !report) {
-      console.error("❌ [generate-free] Erreur création report:", reportError);
+      console.error("[generate-free] report_insert:error", reportError);
       return NextResponse.json(
-        { error: "Erreur lors de la création du rapport" },
+        { error: "Erreur lors de la creation du rapport" },
         { status: 500, headers: JSON_HEADERS },
       );
     }
 
     // ====================================================================
-    // CRÉER TOKEN DE TÉLÉCHARGEMENT (30 jours)
+    // CREER TOKEN DE TELECHARGEMENT (30 jours)
     // ====================================================================
-    const { data: tokenRecord } = await supabaseAdmin.rpc("generate_secure_token");
-    const token = tokenRecord as unknown as string;
+    logStep("secure_token:start", { matricule, reportId: report.id });
+    const { data: tokenRecord, error: secureTokenError } = await supabaseAdmin.rpc("generate_secure_token");
+    logStep("secure_token:done", {
+      matricule,
+      tokenLength: typeof tokenRecord === "string" ? tokenRecord.length : null,
+      error: secureTokenError?.message ?? null,
+    });
+
+    if (secureTokenError || typeof tokenRecord !== "string") {
+      console.error("[generate-free] secure_token:error", secureTokenError);
+      return NextResponse.json(
+        { error: "Erreur lors de la creation du lien de telechargement" },
+        { status: 500, headers: JSON_HEADERS },
+      );
+    }
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
 
+    logStep("token_insert:start", { matricule, reportId: report.id });
     const { error: tokenError } = await supabaseAdmin
       .from("report_tokens")
       .insert({
-        token,
+        token: tokenRecord,
         report_id: report.id,
         matricule,
         tier: FREE_TIER,
@@ -158,24 +209,28 @@ export async function POST(request: NextRequest) {
         pdf_storage_path: storagePath,
         expires_at: expiresAt.toISOString(),
       });
+    logStep("token_insert:done", {
+      matricule,
+      reportId: report.id,
+      error: tokenError?.message ?? null,
+    });
 
     if (tokenError) {
-      console.error("❌ [generate-free] Erreur création token:", tokenError);
+      console.error("[generate-free] token_insert:error", tokenError);
       return NextResponse.json(
-        { error: "Erreur lors de la création du lien de téléchargement" },
+        { error: "Erreur lors de la creation du lien de telechargement" },
         { status: 500, headers: JSON_HEADERS },
       );
     }
 
-    console.log(`✅ [generate-free] PDF prêt: ${filename} | token: ${token}`);
+    logStep("success", { matricule, filename });
 
     return NextResponse.json(
-      { token, matricule },
+      { token: tokenRecord, matricule },
       { headers: JSON_HEADERS },
     );
-
   } catch (error: unknown) {
-    console.error("❌ [generate-free] Erreur:", error);
+    console.error("[generate-free] unhandled:error", error);
     return NextResponse.json(
       { error: "Une erreur interne est survenue." },
       { status: 500, headers: JSON_HEADERS },
