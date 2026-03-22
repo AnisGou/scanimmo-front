@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useIsMobile } from "@/lib/use-is-mobile";
 
 /* ═══════════════════════════════════════════════════════════════════
    DESIGN SYSTEM — hérité du Rapport v12
@@ -473,6 +474,8 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
 function Modal({ open, onClose, title, children }: {
   open: boolean; onClose: () => void; title: string; children: React.ReactNode;
 }) {
+  const isMobile = useIsMobile();
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     if (open) document.addEventListener("keydown", handler);
@@ -488,13 +491,13 @@ function Modal({ open, onClose, title, children }: {
         background: "rgba(9,30,52,.72)",
         backdropFilter: "blur(8px)",
         display: "flex", alignItems: "center", justifyContent: "center",
-        padding: 24,
+        padding: isMobile ? 16 : 24,
         animation: "fadeIn .2s ease",
       }}>
       <div style={{
-        background: T.white, borderRadius: 20,
+        background: T.white, borderRadius: isMobile ? 16 : 20,
         width: "100%", maxWidth: 660,
-        maxHeight: "85vh", overflow: "hidden",
+        maxHeight: isMobile ? "calc(100dvh - 32px)" : "85vh", overflow: "hidden",
         display: "flex", flexDirection: "column",
         boxShadow: "0 40px 120px rgba(0,0,0,.4)",
         border: `1px solid ${T.border}`,
@@ -502,7 +505,7 @@ function Modal({ open, onClose, title, children }: {
       }}>
         {/* Header */}
         <div style={{
-          padding: "24px 32px 20px",
+          padding: isMobile ? "20px 20px 16px" : "24px 32px 20px",
           borderBottom: `1px solid ${T.border}`,
           display: "flex", justifyContent: "space-between", alignItems: "center",
           background: T.navy,
@@ -650,6 +653,7 @@ function AvertissementModal({ open, onClose }: { open: boolean; onClose: () => v
 
 /* ─── Modal Contact ──────────────────────────────────────────────── */
 function ContactModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const isMobile = useIsMobile();
   const [form, setForm] = useState({ nom: "", courriel: "", organisation: "", message: "", objet: "" });
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
@@ -733,7 +737,7 @@ function ContactModal({ open, onClose }: { open: boolean; onClose: () => void })
             </div>
 
             {/* Nom + courriel */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
               {[
                 { key: "nom" as const, label: "Nom *", placeholder: "Votre nom et prénom ici !", type: "text" },
                 { key: "courriel" as const, label: "Courriel *", placeholder: "Votre courriel ici !", type: "email" },
@@ -842,19 +846,21 @@ function ContactModal({ open, onClose }: { open: boolean; onClose: () => void })
 
 /* ─── Composant : notification toast ────────────────────────────── */
 function Toast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+  const isMobile = useIsMobile();
+
   useEffect(() => {
     const t = setTimeout(onDismiss, 3200);
     return () => clearTimeout(t);
   }, [onDismiss]);
   return (
     <div style={{
-      position: "fixed", bottom: 32, right: 32, zIndex: 2000,
+      position: "fixed", bottom: isMobile ? 16 : 32, right: isMobile ? 16 : 32, left: isMobile ? 16 : "auto", zIndex: 2000,
       background: T.navy, border: `1px solid ${T.gold}44`,
       borderRadius: 12, padding: "16px 24px",
       boxShadow: "0 16px 48px rgba(0,0,0,.35)",
       display: "flex", alignItems: "center", gap: 12,
       animation: "slideUp .25s ease",
-      maxWidth: 360,
+      maxWidth: isMobile ? "none" : 360,
     }}>
       <span style={{ fontSize: 18 }}>{"\u25CE"}</span>
       <span style={{ fontFamily: T.sans, fontSize: 13.5, color: T.white, lineHeight: 1.5 }}>
@@ -872,6 +878,7 @@ function Toast({ message, onDismiss }: { message: string; onDismiss: () => void 
    COMPOSANT PRINCIPAL
 ════════════════════════════════════════════════════════════════════ */
 export default function ScanimmoHome() {
+  const isMobile = useIsMobile();
   const [cguOpen,     setCguOpen]     = useState(false);
   const [avertOpen,   setAvertOpen]   = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
@@ -898,10 +905,13 @@ export default function ScanimmoHome() {
     { id: "sources",  label: "Sources de donn\u00e9es" },
   ];
 
+  const shellPadding = isMobile ? 20 : 40;
+  const headerPadding = isMobile ? 16 : 40;
+
   return (
     <div style={{
       fontFamily: T.sans, background: T.cream,
-      minHeight: "100vh", color: T.ink,
+      minHeight: "100dvh", color: T.ink,
     }}>
       {/* Fonts loaded via layout.tsx head */}
       <CGUModal              open={cguOpen}     onClose={() => setCguOpen(false)}/>
@@ -911,19 +921,21 @@ export default function ScanimmoHome() {
 
       {/* ── TOPBAR ──────────────────────────────────────────────────── */}
       <header style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 900,
-        height: 56,
+        position: isMobile ? "sticky" : "fixed", top: 0, left: 0, right: 0, zIndex: 900,
+        minHeight: 56,
         background: scrolled
           ? "rgba(15,43,75,.97)"
-          : "transparent",
+          : (isMobile ? T.navy : "transparent"),
         backdropFilter: scrolled ? "blur(16px)" : "none",
-        borderBottom: scrolled ? `1px solid rgba(196,154,40,.12)` : "none",
+        borderBottom: scrolled || isMobile ? `1px solid rgba(196,154,40,.12)` : "none",
         display: "flex", alignItems: "center",
-        padding: "0 40px",
+        flexWrap: isMobile ? "wrap" : "nowrap",
+        rowGap: isMobile ? 12 : 0,
+        padding: isMobile ? "12px 16px" : `0 ${headerPadding}px`,
         transition: "all .3s ease",
       }}>
         {/* Logo */}
-        <a href="#" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10, marginRight: 40 }}>
+        <a href="#" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10, marginRight: isMobile ? 0 : 40 }}>
           <span style={{
             fontFamily: T.display, fontSize: 17, fontWeight: 400,
             color: T.goldLt, letterSpacing: 2.5, textTransform: "uppercase",
@@ -936,7 +948,14 @@ export default function ScanimmoHome() {
         </a>
 
         {/* Nav */}
-        <nav style={{ display: "flex", gap: 4, flex: 1 }}>
+        <nav style={{
+          display: "flex",
+          gap: 4,
+          flex: isMobile ? "1 0 100%" : 1,
+          overflowX: isMobile ? "auto" : "visible",
+          order: isMobile ? 3 : 2,
+          paddingBottom: isMobile ? 2 : 0,
+        }}>
           {NAV.map(n => (
             <button key={n.id}
               onClick={() => {
@@ -950,10 +969,11 @@ export default function ScanimmoHome() {
               onMouseLeave={() => setActiveNav(null)}
               style={{
                 background: "none", border: "none", cursor: "pointer",
-                padding: "8px 14px", borderRadius: 8,
-                fontFamily: T.sans, fontSize: 13, fontWeight: 400,
+                padding: isMobile ? "8px 12px" : "8px 14px", borderRadius: 8,
+                fontFamily: T.sans, fontSize: isMobile ? 12.5 : 13, fontWeight: 400,
                 color: activeNav === n.id ? T.goldLt : "rgba(255,255,255,.52)",
                 transition: "all .15s",
+                whiteSpace: "nowrap",
               }}>
               {n.label}
             </button>
@@ -961,14 +981,14 @@ export default function ScanimmoHome() {
         </nav>
 
         {/* CTA droite */}
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: isMobile ? "auto" : 0, order: isMobile ? 2 : 3 }}>
           <button
             onClick={() => setContactOpen(true)}
             style={{
               background: T.gold,
               border: "none", cursor: "pointer", borderRadius: 8,
-              padding: "9px 20px",
-              fontFamily: T.sans, fontSize: 12.5, fontWeight: 600,
+              padding: isMobile ? "9px 16px" : "9px 20px",
+              fontFamily: T.sans, fontSize: isMobile ? 12 : 12.5, fontWeight: 600,
               color: T.navy, letterSpacing: .2,
               transition: "all .15s",
             }}
@@ -982,11 +1002,11 @@ export default function ScanimmoHome() {
 
       {/* ── HERO ────────────────────────────────────────────────────── */}
       <section style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         background: `linear-gradient(160deg, ${T.navyDeep} 0%, ${T.navy} 45%, ${T.navyLt} 100%)`,
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        padding: "80px 40px 56px",
+        padding: isMobile ? "40px 20px 48px" : `80px ${shellPadding}px 56px`,
         position: "relative", overflow: "hidden",
       }}>
         {/* Texture grain */}
@@ -1008,11 +1028,11 @@ export default function ScanimmoHome() {
 
         {/* Eyebrow */}
         <div style={{
-          fontFamily: T.mono, fontSize: 10.5, letterSpacing: 3,
+          fontFamily: T.mono, fontSize: 10.5, letterSpacing: isMobile ? 1.8 : 3,
           textTransform: "uppercase",
           color: T.gold,
           marginBottom: 24,
-          display: "flex", alignItems: "center", gap: 10,
+          display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", justifyContent: "center",
           animation: "fadeUp .6s ease both",
         }}>
           <span style={{
@@ -1028,7 +1048,7 @@ export default function ScanimmoHome() {
 
         {/* Headline */}
         <h1 style={{
-          fontFamily: T.display, fontSize: "clamp(38px,5.5vw,68px)",
+          fontFamily: T.display, fontSize: isMobile ? "clamp(32px,11vw,44px)" : "clamp(38px,5.5vw,68px)",
           fontWeight: 400, color: T.white,
           margin: "0 0 20px", lineHeight: 1.12,
           textAlign: "center", letterSpacing: -1.5,
@@ -1039,7 +1059,7 @@ export default function ScanimmoHome() {
         </h1>
 
         <p style={{
-          fontFamily: T.sans, fontSize: 15, fontWeight: 300,
+          fontFamily: T.sans, fontSize: isMobile ? 14 : 15, fontWeight: 300,
           color: "rgba(255,255,255,.52)",
           maxWidth: 720, textAlign: "center", lineHeight: 1.8,
           margin: "0 0 52px",
@@ -1059,7 +1079,7 @@ export default function ScanimmoHome() {
 
         {/* Statistiques */}
         <div style={{
-          display: "flex", gap: 0,
+          display: "flex", gap: 0, flexWrap: isMobile ? "wrap" : "nowrap",
           marginTop: 64,
           borderTop: "1px solid rgba(255,255,255,.08)",
           paddingTop: 40,
@@ -1068,9 +1088,10 @@ export default function ScanimmoHome() {
         }}>
           {STATS.map((s, i) => (
             <div key={i} style={{
-              flex: 1, textAlign: "center",
-              borderRight: i < STATS.length - 1 ? "1px solid rgba(255,255,255,.08)" : "none",
-              padding: "0 24px",
+              flex: isMobile ? "1 1 50%" : 1, textAlign: "center",
+              borderRight: !isMobile && i < STATS.length - 1 ? "1px solid rgba(255,255,255,.08)" : "none",
+              borderTop: isMobile && i >= 2 ? "1px solid rgba(255,255,255,.08)" : "none",
+              padding: isMobile ? "20px 12px 0" : "0 24px",
             }}>
               <div style={{
                 fontFamily: T.display, fontSize: 30,
@@ -1097,7 +1118,7 @@ export default function ScanimmoHome() {
 
       {/* ── SOURCES DE DONNÉES ─────────────────────────────────────── */}
       <section id="sources" style={{
-        padding: "72px 40px 64px",
+        padding: isMobile ? "56px 20px" : `72px ${shellPadding}px 64px`,
         background: T.cream,
       }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
@@ -1111,7 +1132,7 @@ export default function ScanimmoHome() {
           }}>12 sources institutionnelles couvrant 3,7 millions de propriétés au Québec</p>
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(280px, 1fr))",
             gap: 16,
           }}>
             {SOURCES.map((s, i) => {

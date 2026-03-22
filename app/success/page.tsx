@@ -8,6 +8,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { useIsMobile } from "@/lib/use-is-mobile";
 
 /* ═══════════════════════════════════════════════════════════════════
    DESIGN SYSTEM — herite du Rapport v12
@@ -32,6 +33,7 @@ const T = {
 };
 
 function SuccessContent() {
+  const isMobile = useIsMobile();
   const searchParams = useSearchParams();
   const matricule = searchParams.get("matricule");
   const token = searchParams.get("token");
@@ -40,7 +42,7 @@ function SuccessContent() {
   if (!matricule) {
     return (
       <div style={{
-        minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+        minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center",
         background: T.cream, fontFamily: T.sans,
       }}>
         <div style={{ textAlign: "center", maxWidth: 480 }}>
@@ -76,7 +78,7 @@ function SuccessContent() {
   };
 
   return (
-    <div style={{ fontFamily: T.sans, background: T.cream, minHeight: "100vh", color: T.ink }}>
+    <div style={{ fontFamily: T.sans, background: T.cream, minHeight: "100dvh", color: T.ink }}>
 
       {/* ── TOPBAR ──────────────────────────────────────────────────── */}
       <header style={{
@@ -84,7 +86,7 @@ function SuccessContent() {
         background: T.navy,
         borderBottom: `1px solid rgba(196,154,40,.12)`,
         display: "flex", alignItems: "center",
-        padding: "0 40px",
+        padding: isMobile ? "0 20px" : "0 40px",
       }}>
         <a href="/" style={{
           textDecoration: "none", display: "flex", alignItems: "center", gap: 10,
@@ -104,7 +106,7 @@ function SuccessContent() {
       {/* ── CONTENU PRINCIPAL ─────────────────────────────────────── */}
       <main style={{
         maxWidth: 680, margin: "0 auto",
-        padding: "80px 40px 48px",
+        padding: isMobile ? "64px 20px 40px" : "80px 40px 48px",
       }}>
 
         {/* Success indicator */}
@@ -207,7 +209,7 @@ function SuccessContent() {
 
           {/* Card body */}
           <div style={{ padding: "24px 28px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
               <div>
                 <div style={{
                   fontFamily: T.mono, fontSize: 10, letterSpacing: 1.5,
@@ -308,12 +310,12 @@ function SuccessContent() {
       <footer style={{
         background: T.navyDeep,
         borderTop: `1px solid rgba(196,154,40,.12)`,
-        padding: "24px 40px",
+        padding: isMobile ? "24px 20px" : "24px 40px",
         marginTop: 48,
       }}>
         <div style={{
           maxWidth: 680, margin: "0 auto",
-          display: "flex", justifyContent: "space-between", alignItems: "center",
+          display: "flex", justifyContent: "space-between", alignItems: "center", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 10 : 0,
         }}>
           <span style={{
             fontFamily: T.mono, fontSize: 10.5, color: "rgba(255,255,255,.2)",
@@ -337,7 +339,7 @@ export default function SuccessPage() {
   return (
     <Suspense fallback={
       <div style={{
-        minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+        minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center",
         background: "#F8F6F1",
       }}>
         <div style={{

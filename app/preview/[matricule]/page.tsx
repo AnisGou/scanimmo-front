@@ -11,6 +11,7 @@ import { useParams, useRouter } from "next/navigation";
 import { resolveScore } from "@/lib/resolve-score";
 import { formatNumber, formatCurrency } from "@/lib/utils";
 import type { PropertyPreview, ScoreResult } from "@/lib/types";
+import { useIsMobile } from "@/lib/use-is-mobile";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   ResponsiveContainer,
@@ -383,6 +384,7 @@ function ContaminationDetail({ site }: { site: ContaminationSiteData }) {
 }
 
 function TabSynthese({ data, score }: { data: FullData; score: ScoreResult }) {
+  const isMobile = useIsMobile();
   const p = data.property;
   const sc = scoreColors(score.score);
   const [showContamDetail, setShowContamDetail] = useState(false);
@@ -428,7 +430,7 @@ function TabSynthese({ data, score }: { data: FullData; score: ScoreResult }) {
   ];
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
       {/* Score + facteurs */}
       <SCard title="Score de faisabilité">
         <div style={{ textAlign: "center", marginBottom: 20 }}>
@@ -599,6 +601,7 @@ function TabCarte({ data }: { data: FullData }) {
 }
 
 function TabLidar({ data }: { data: FullData }) {
+  const isMobile = useIsMobile();
   const p = data.property;
   const hasLidar = p.lidar_match_method && p.lidar_match_method !== "OUTSIDE_COVERAGE";
 
@@ -616,7 +619,7 @@ function TabLidar({ data }: { data: FullData }) {
   const elevRange = elevMin !== null && elevMax !== null ? elevMax - elevMin : null;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
       {/* Données LiDAR */}
       <SCard title="Métadonnées LiDAR">
         {lidarInfo && (
@@ -688,6 +691,7 @@ function TabLidar({ data }: { data: FullData }) {
 }
 
 function TabEnvironnement({ data }: { data: FullData }) {
+  const isMobile = useIsMobile();
   const p = data.property;
   const [showContamDetail, setShowContamDetail] = useState(false);
   const isContaminated = p.contamination_statut === "OUI";
@@ -697,7 +701,7 @@ function TabEnvironnement({ data }: { data: FullData }) {
   const hasMH = p.mh_intersecte === "OUI" || p.mh_intersecte === true;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
       {/* Contamination */}
       <SCard title="Contamination">
         <div
@@ -790,6 +794,7 @@ function TabEnvironnement({ data }: { data: FullData }) {
 }
 
 function TabProximite({ data }: { data: FullData }) {
+  const isMobile = useIsMobile();
   const prox = data.proximity;
 
   if (!prox) {
@@ -829,7 +834,7 @@ function TabProximite({ data }: { data: FullData }) {
   const sc = prox.access_score_0_100 !== null ? scoreColors(prox.access_score_0_100) : null;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
       {/* Radar */}
       <SCard title="Radar de proximité">
         {prox.access_score_0_100 !== null && (
@@ -1299,6 +1304,7 @@ function TabDefavorisation({ data }: { data: FullData }) {
 }
 
 function TabFinances({ data }: { data: FullData }) {
+  const isMobile = useIsMobile();
   const p = data.property;
 
   // Derived calculations
@@ -1316,7 +1322,7 @@ function TabFinances({ data }: { data: FullData }) {
     ? (p.valeur_batiment / p.valeur_totale) * 100 : null;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
       {/* Évaluation foncière */}
       <SCard title="Évaluation foncière">
         <div style={{
@@ -1502,6 +1508,7 @@ function TabPermis({ data }: { data: FullData }) {
    MAIN PAGE COMPONENT
 ═══════════════════════════════════════════════════════════════════ */
 export default function PreviewPage() {
+  const isMobile = useIsMobile();
   const params = useParams<{ matricule: string }>();
   const router = useRouter();
   const [fullData, setFullData] = useState<FullData | null>(null);
@@ -1600,7 +1607,7 @@ export default function PreviewPage() {
   if (loading) {
     return (
       <div style={{
-        minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+        minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center",
         background: T.cream, fontFamily: T.sans,
       }}>
         <div style={{ textAlign: "center" }}>
@@ -1623,7 +1630,7 @@ export default function PreviewPage() {
   if (!fullData || !score) {
     return (
       <div style={{
-        minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+        minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center",
         background: T.cream, fontFamily: T.sans,
       }}>
         <div style={{ textAlign: "center", maxWidth: 480 }}>
@@ -1670,17 +1677,17 @@ export default function PreviewPage() {
   const normLidar = normalizeLidarMethod(p.lidar_match_method);
 
   return (
-    <div style={{ fontFamily: T.sans, background: T.cream, minHeight: "100vh", color: T.ink }}>
+    <div style={{ fontFamily: T.sans, background: T.cream, minHeight: "100dvh", color: T.ink }}>
 
       {/* ── TOPBAR ──────────────────────────────────────────────────── */}
       <header style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 900,
+        position: isMobile ? "sticky" : "fixed", top: 0, left: 0, right: 0, zIndex: 900,
         height: 56,
         background: scrolled ? "rgba(15,43,75,.97)" : T.navy,
         backdropFilter: scrolled ? "blur(16px)" : "none",
         borderBottom: `1px solid rgba(196,154,40,.12)`,
         display: "flex", alignItems: "center",
-        padding: "0 40px",
+        padding: isMobile ? "0 16px" : "0 40px",
         transition: "all .3s ease",
       }}>
         <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
@@ -1725,7 +1732,7 @@ export default function PreviewPage() {
           pointerEvents: "none",
         }} />
 
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "64px 40px 56px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "48px 20px 40px" : "64px 40px 56px" }}>
           <div style={{
             fontFamily: T.mono, fontSize: 10.5, letterSpacing: 2.5,
             textTransform: "uppercase", color: T.gold, marginBottom: 16,
@@ -1761,14 +1768,14 @@ export default function PreviewPage() {
           {/* Score + Metriques */}
           <div style={{
             marginTop: 48,
-            display: "grid", gridTemplateColumns: "auto 1fr", gap: 40,
+            display: "grid", gridTemplateColumns: isMobile ? "1fr" : "auto 1fr", gap: isMobile ? 24 : 40,
             alignItems: "start",
           }}>
             <div style={{
               background: "rgba(255,255,255,.04)",
               border: `1px solid rgba(255,255,255,.08)`,
-              borderRadius: 16, padding: "28px 32px",
-              textAlign: "center", minWidth: 160,
+                borderRadius: 16, padding: "28px 32px",
+                textAlign: "center", minWidth: isMobile ? "auto" : 160,
             }}>
               <ScoreArc score={score.score} />
               <div style={{
@@ -1800,7 +1807,7 @@ export default function PreviewPage() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: 0 }}>
                 {metrics.map((m, i) => (
                   <div key={i} style={{ padding: "16px 20px", borderLeft: `2px solid ${T.gold}33` }}>
                     <div style={{
@@ -1827,7 +1834,7 @@ export default function PreviewPage() {
         <div style={{
           background: T.navy,
           borderBottom: `1px solid rgba(196,154,40,.12)`,
-          padding: "12px 40px",
+          padding: isMobile ? "12px 20px" : "12px 40px",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
         }}>
           <div style={{
@@ -1856,7 +1863,7 @@ export default function PreviewPage() {
       }}>
         <div style={{
           maxWidth: 1100, margin: "0 auto",
-          display: "flex", gap: 0, padding: "0 40px",
+          display: "flex", gap: 0, padding: isMobile ? "0 20px" : "0 40px",
           overflowX: "auto",
         }}>
           {tabs.map(tab => (
@@ -1882,7 +1889,7 @@ export default function PreviewPage() {
       </div>
 
       {/* ── TAB CONTENT ──────────────────────────────────────────── */}
-      <section style={{ padding: "32px 40px 40px", background: T.cream }}>
+      <section style={{ padding: isMobile ? "24px 20px 32px" : "32px 40px 40px", background: T.cream }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           {activeTab === "synthese" && <TabSynthese data={fullData} score={score} />}
           {activeTab === "carte" && <TabCarte data={fullData} />}
@@ -1896,11 +1903,11 @@ export default function PreviewPage() {
       </section>
 
       {/* ── CTA ──────────────────────────────────────────────────── */}
-      <section style={{ padding: "0 40px 72px", background: T.cream }}>
+      <section style={{ padding: isMobile ? "0 20px 56px" : "0 40px 72px", background: T.cream }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{
             background: `linear-gradient(135deg, ${T.navyDeep} 0%, ${T.navy} 100%)`,
-            borderRadius: 20, padding: "48px 40px",
+            borderRadius: 20, padding: isMobile ? "36px 24px" : "48px 40px",
             textAlign: "center", position: "relative", overflow: "hidden",
           }}>
             <div style={{
@@ -1977,7 +1984,7 @@ export default function PreviewPage() {
       <div style={{
         background: T.cream,
         borderTop: `1px solid ${T.border}`,
-        padding: "24px 40px",
+        padding: isMobile ? "20px" : "24px 40px",
         textAlign: "center",
       }}>
         <p style={{
@@ -1993,11 +2000,11 @@ export default function PreviewPage() {
       <footer style={{
         background: T.navyDeep,
         borderTop: `1px solid rgba(196,154,40,.12)`,
-        padding: "32px 40px",
+        padding: isMobile ? "24px 20px" : "32px 40px",
       }}>
         <div style={{
           maxWidth: 1100, margin: "0 auto",
-          display: "flex", justifyContent: "space-between", alignItems: "center",
+          display: "flex", justifyContent: "space-between", alignItems: "center", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 10 : 0,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <span style={{

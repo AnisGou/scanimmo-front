@@ -31,8 +31,15 @@
   * {
     @apply border-border;
   }
+  html {
+    min-height: 100%;
+  }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans), system-ui, sans-serif;
+    min-height: 100dvh;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 }
