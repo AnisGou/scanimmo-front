@@ -699,7 +699,7 @@ function ContactModal({ open, onClose }: { open: boolean; onClose: () => void })
               fontFamily: T.display, fontSize: 22, color: T.navy, marginBottom: 12,
             }}>Message envoyé</div>
             <div style={{ fontFamily: T.sans, fontSize: 14, color: T.muted, lineHeight: 1.7 }}>
-              Nous vous remercions de votre message et vous répondrons dès que possible !<br/>
+              Nous vous remercions de votre message et vous répondrons dès que possible !
             </div>
             <button onClick={() => { setSent(false); setSubmitError(null); setForm({ nom:"",courriel:"",organisation:"",message:"",objet:"" }); onClose(); }}
               style={{
