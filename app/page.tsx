@@ -582,7 +582,7 @@ function CGUModal({ open, onClose }: { open: boolean; onClose: () => void }) {
           fontFamily: T.mono, fontSize: 11, color: T.muted,
         }}>
           Version 2.0.0 {"\u00b7"} En vigueur depuis le 6 mars 2026 {"\u00b7"} Innovations Scanimmo Inc.<br/>
-          Si\u00e8ge social : Qu\u00e9bec (Qu\u00e9bec) Canada {"\u00b7"} gouesmi.anis@gmail.com
+          Si\u00e8ge social : Qu\u00e9bec (Qu\u00e9bec) Canada {"\u00b7"} Contact via le formulaire du site
         </div>
       </div>
     </Modal>
@@ -641,7 +641,7 @@ function AvertissementModal({ open, onClose }: { open: boolean; onClose: () => v
           fontFamily: T.mono, fontSize: 11, color: T.muted,
         }}>
           Version 1.0.0 {"\u00b7"} En vigueur depuis le 6 mars 2026 {"\u00b7"} Innovations Scanimmo Inc.<br/>
-          Si\u00e8ge social : Qu\u00e9bec (Qu\u00e9bec) Canada {"\u00b7"} gouesmi.anis@gmail.com
+          Si\u00e8ge social : Qu\u00e9bec (Qu\u00e9bec) Canada {"\u00b7"} Contact via le formulaire du site
         </div>
       </div>
     </Modal>
@@ -653,27 +653,33 @@ function ContactModal({ open, onClose }: { open: boolean; onClose: () => void })
   const [form, setForm] = useState({ nom: "", courriel: "", organisation: "", message: "", objet: "" });
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
-  const contactEmail = "gouesmi.anis@gmail.com";
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
-    const objetLabel = OBJETS.find((item) => item.v === form.objet)?.l ?? form.objet;
-    const subject = `[Scanimmo] ${objetLabel || "Nouveau message"}`;
-    const body = [
-      `Nom: ${form.nom}`,
-      `Courriel: ${form.courriel}`,
-      `Organisation: ${form.organisation || "Non fournie"}`,
-      "",
-      "Message:",
-      form.message,
-    ].join("\n");
+    setSubmitError(null);
 
-    window.location.href =
-      `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    setSending(false);
-    setSent(true);
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Erreur lors de l'envoi du message");
+      }
+
+      setSent(true);
+      setForm({ nom: "", courriel: "", organisation: "", message: "", objet: "" });
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Erreur lors de l'envoi du message");
+    } finally {
+      setSending(false);
+    }
   };
 
   const OBJETS = [
@@ -694,10 +700,8 @@ function ContactModal({ open, onClose }: { open: boolean; onClose: () => void })
             }}>Message envoyé</div>
             <div style={{ fontFamily: T.sans, fontSize: 14, color: T.muted, lineHeight: 1.7 }}>
               Nous vous remercions de votre message et vous répondrons dès que possible !<br/>
-              <a href={`mailto:${contactEmail}`}
-                style={{ color: T.gold }}>{contactEmail}</a>
             </div>
-            <button onClick={() => { setSent(false); setForm({ nom:"",courriel:"",organisation:"",message:"",objet:"" }); onClose(); }}
+            <button onClick={() => { setSent(false); setSubmitError(null); setForm({ nom:"",courriel:"",organisation:"",message:"",objet:"" }); onClose(); }}
               style={{
                 marginTop: 24, padding: "12px 28px",
                 background: T.navy, border: "none", cursor: "pointer",
@@ -818,6 +822,16 @@ function ContactModal({ open, onClose }: { open: boolean; onClose: () => void })
                 </>
               ) : "Envoyer le message \u2192"}
             </button>
+            {submitError && (
+              <div style={{
+                fontFamily: T.sans,
+                fontSize: 13,
+                color: T.red,
+                lineHeight: 1.6,
+              }}>
+                {submitError}
+              </div>
+            )}
             <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
           </form>
         )}
