@@ -7,6 +7,54 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      contact_messages: {
+        Row: {
+          id: number
+          created_at: string
+          status: string
+          objet: string
+          nom: string
+          courriel: string
+          organisation: string | null
+          message: string
+          source: string
+          origin: string | null
+          user_agent: string | null
+          delivered_at: string | null
+          delivery_error: string | null
+        }
+        Insert: {
+          id?: never
+          created_at?: string
+          status?: string
+          objet: string
+          nom: string
+          courriel: string
+          organisation?: string | null
+          message: string
+          source?: string
+          origin?: string | null
+          user_agent?: string | null
+          delivered_at?: string | null
+          delivery_error?: string | null
+        }
+        Update: {
+          id?: never
+          created_at?: string
+          status?: string
+          objet?: string
+          nom?: string
+          courriel?: string
+          organisation?: string | null
+          message?: string
+          source?: string
+          origin?: string | null
+          user_agent?: string | null
+          delivered_at?: string | null
+          delivery_error?: string | null
+        }
+        Relationships: []
+      }
       properties: {
         Row: {
           id: string
